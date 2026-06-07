@@ -1,0 +1,53 @@
+# Central Config Base Defaults
+
+environment: dev
+
+features:
+  web_search: false
+  streaming_ui: true
+
+# Base defaults (Overridden by UI if user provides keys)
+llm_defaults:
+  light_provider: ollama
+  light_model: "llama3.1:8b"
+  heavy_provider: ollama
+  heavy_model: "llama3.1:8b"
+
+providers:
+  ollama: { base_url: "http://localhost:11434" }
+  openai: { base_url: "https://api.openai.com/v1" }
+  deepseek: { base_url: "https://api.deepseek.com/v1" }
+  gemini: { base_url: "https://generativelanguage.googleapis.com/v1beta" }
+  qwen: { base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1" }
+
+prompts:
+  # Coordinator Agent Config
+  coordinator:
+    system_instruction: "You are the Coordinator Agent for a C-suite Market Intelligence system. Your job is to analyze the market research topic '{topic}' and delegate tasks to specialized agents."
+    prompt_template: "Topic to coordinate: '{topic}'. Initiate the research phases. Output a short 1-sentence planning confirmation."
+
+  # Light Agents (Research, Competitor, Pricing, Trend)
+  research_agent:
+    system_instruction: "You are the General Market Research Agent. Research the market size, state, and primary facts for '{topic}'."
+    prompt_template: "Analyze the general market size, history, and status for '{topic}' using these search results:\n\n{search_results}\n\nDraft a detailed 'General Market Overview' section."
+
+  competitor_agent:
+    system_instruction: "You are the Competitive Landscape Agent. Research competitors and market players for '{topic}'."
+    prompt_template: "Identify key competitors, their market share, strengths, and weaknesses for '{topic}' using these search results:\n\n{search_results}\n\nDraft a detailed 'Competitor Analysis' section."
+
+  pricing_agent:
+    system_instruction: "You are the Pricing & Monetization Agent. Research pricing details, business models, and monetization for '{topic}'."
+    prompt_template: "Evaluate common pricing models, average prices, and monetization tactics for '{topic}' using these search results:\n\n{search_results}\n\nDraft a detailed 'Pricing & Business Models' section."
+
+  trend_agent:
+    system_instruction: "You are the Industry Trends Agent. Research macroeconomic trends, future outlook, and technological shifts for '{topic}'."
+    prompt_template: "Identify top industry trends, growth drivers, future forecasts, and technology trends for '{topic}' using these search results:\n\n{search_results}\n\nDraft a detailed 'Industry Trends & Forecasts' section."
+
+  # Heavy Agents (Writer, Fact Checker)
+  writer_agent:
+    system_instruction: "You are the C-suite Executive Writer. Your job is to compile multiple research drafts into a cohesive, C-suite business report."
+    prompt_template: "Compile these four research drafts into a single, cohesive, high-quality draft report for '{topic}':\n\nDrafts:\n1. General Research:\n{draft_general}\n\n2. Competitors:\n{draft_competitor}\n\n3. Pricing:\n{draft_pricing}\n\n4. Trends:\n{draft_trend}"
+
+  fact_checker_agent:
+    system_instruction: "You are the Senior Executive Auditor & Fact Checker. Review the draft report, audit SWOT analysis, identify analytical gaps, refine recommendations, and format the output into a premium C-Suite JSON schema."
+    prompt_template: "Critique and finalize the following draft report for '{topic}'. Highlight any structural gaps, swot elements, and critique adjustments in the critique notes. Output a JSON matching the structured schema:\n\nDraft Report:\n{compiled_report}"

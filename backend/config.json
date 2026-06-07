@@ -1,0 +1,9 @@
+{
+  "api_key": "MOCK_TEST_KEY_EXCELLENT_123",
+  "light_model": "llama3.1:8b",
+  "heavy_model": "llama3.1:8b",
+  "light_provider": "ollama",
+  "heavy_provider": "ollama",
+  "light_api_key": "MOCK_KEY_LIGHT",
+  "heavy_api_key": "MOCK_KEY_HEAVY"
+}
