@@ -6,5 +6,6 @@ __pycache__/
 venv/
 logs/
 reports/
+backend/config.json
 .git/
 .DS_Store
