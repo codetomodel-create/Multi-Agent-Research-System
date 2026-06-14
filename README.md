@@ -1,4 +1,14 @@
+---
+title: Multi Agent Research System
+emoji: 📊
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # AI Market Research Assistant
+
 
 The AI Market Research Assistant is a config-driven, multi-agent system designed to generate premium C-suite business reports from a single business idea and target location. It utilizes a combination of light and heavy LLMs to optimize token consumption while maintaining high analytical quality.
 
