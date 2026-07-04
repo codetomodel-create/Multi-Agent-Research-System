@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+__pycache__/
+*.pyc
+.venv/
+venv/
+logs/
+reports/
+backend/config.json
+.DS_Store
