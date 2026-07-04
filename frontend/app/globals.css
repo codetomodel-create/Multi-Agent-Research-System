@@ -161,7 +161,6 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
 
-/* Main Layout & App Structure */
 .app-container {
   display: flex;
   width: 100vw;
@@ -175,32 +174,39 @@ h1, h2, h3, h4, h5, h6 {
 /* Glassmorphism utility */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: 
-    0 4px 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 var(--glass-highlight);
+    0 8px 32px rgba(0, 0, 0, 0.5), /* Global Ambient Occlusion */
+    0 24px 64px rgba(0, 0, 0, 0.4), /* Deep directional shadow */
+    inset 0 1px 1px rgba(255, 255, 255, 0.15), /* Top specular highlight (glass thickness) */
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2); /* Bottom occlusion */
+  transform: translateZ(0); /* Hardware acceleration */
 }
 
 .glass-card {
   background: var(--glass-card-bg);
   border: 1px solid var(--glass-card-border);
   border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
   background: var(--glass-card-hover-bg);
   border-color: var(--glass-card-hover-border);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 10px 20px rgba(0,0,0,0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
 }
 
 /* Buttons and Inputs styling */
 .btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
   padding: 10px 20px;
   border-radius: 8px;
@@ -210,17 +216,28 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 15px var(--primary-glow);
+  box-shadow: 0 4px 12px var(--primary-glow);
   transition: all 0.2s ease;
+  user-select: none;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px oklch(0.65 0.22 280 / 0.3);
+  transform: translateY(-1.5px);
+  box-shadow: 
+    0 6px 18px oklch(0.65 0.22 280 / 0.25);
+  filter: brightness(1.05);
 }
 
 .btn-primary:active {
   transform: translateY(1px);
+  box-shadow: 0 2px 6px var(--primary-glow);
+  filter: brightness(0.95);
+  transition: all 0.05s ease;
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .btn-secondary {
@@ -235,12 +252,26 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
 .btn-secondary:hover {
   background: var(--btn-secondary-hover);
   border-color: var(--glass-border);
+  filter: brightness(1.15);
+}
+
+.btn-secondary:active {
+  transform: scale(0.92);
+  filter: brightness(0.7);
+  background: var(--primary-glow);
+  transition: all 0.05s ease;
+}
+
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .input-field {
@@ -364,6 +395,13 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-main);
 }
 
+.nav-item:active {
+  transform: scale(0.94);
+  background: var(--primary-glow) !important;
+  filter: brightness(0.75);
+  transition: all 0.05s ease;
+}
+
 .nav-item.active {
   background: linear-gradient(135deg, var(--primary-glow) 0%, rgba(255, 255, 255, 0.01) 100%);
   border: 1px solid var(--glass-border);
@@ -472,7 +510,9 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   right: 20px;
   top: 20px;
-  opacity: 0.6;
+  opacity: 0.8;
+  transform: translateZ(20px);
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
 }
 
 .stat-icon-pending {
@@ -480,7 +520,9 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   right: 20px;
   top: 20px;
-  opacity: 0.6;
+  opacity: 0.8;
+  transform: translateZ(20px);
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
 }
 
 .stat-value {
@@ -489,6 +531,8 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   line-height: 1.1;
   margin-bottom: 4px;
+  transform: translateZ(25px);
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
 }
 
 .stat-label {
@@ -496,6 +540,8 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  transform: translateZ(15px);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .dashboard-layout {
@@ -997,6 +1043,13 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-main);
 }
 
+.report-tab-btn:active {
+  transform: scale(0.91);
+  filter: brightness(0.7);
+  background: var(--primary-glow);
+  transition: all 0.05s ease;
+}
+
 .report-tab-btn.active {
   background: var(--primary-glow);
   border-color: var(--primary);
@@ -1100,8 +1153,84 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--btn-secondary-hover);
 }
 
+.theme-btn:active {
+  transform: scale(0.82);
+  filter: brightness(0.6);
+  background: var(--primary-glow);
+  transition: all 0.05s ease;
+}
+
 .theme-btn.active {
   color: var(--primary);
   background: var(--primary-glow);
   border: 1px solid var(--glass-border);
+}
+
+/* ── 3D Canvas & Scene Layer ─────────────────────────────────────────────── */
+.sidebar,
+.main-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* StatsCard3D glow overlay */
+/* StatsCard flat overlay */
+.stats-card-flat {
+  position: relative;
+  cursor: default;
+}
+
+.stats-card-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.stats-card-flat:hover .stats-card-glow {
+  opacity: 1;
+}
+
+/* Info alert variant */
+.alert-message.info {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: var(--info);
+}
+
+/* Staggered fade-in for history rows */
+.history-row {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Hide-mobile utility */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .history-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .history-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .report-tabs {
+    gap: 4px;
+  }
+  
+  .report-tab-btn {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
 }

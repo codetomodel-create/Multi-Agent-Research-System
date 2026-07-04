@@ -19,6 +19,7 @@ providers:
   deepseek: { base_url: "https://api.deepseek.com/v1" }
   gemini: { base_url: "https://generativelanguage.googleapis.com/v1beta" }
   qwen: { base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1" }
+  bedrock: {} # LiteLLM handles the Bedrock endpoint dynamically based on the AWS region
 
 prompts:
   # Coordinator Agent Config

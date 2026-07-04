@@ -1,36 +1,36 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react";
 import { 
-  Compass, 
-  Settings, 
-  Layers, 
-  FileText, 
-  Terminal, 
-  Play, 
-  RefreshCw, 
-  Eye, 
-  Download, 
-  CheckCircle, 
-  AlertTriangle, 
-  Clock, 
-  Key, 
-  Sliders, 
-  TrendingUp, 
-  Award, 
-  Activity,
-  History,
-  FileCode,
-  MapPin,
-  Briefcase,
-  Sun,
-  Moon,
-  Palette
+  Compass, Settings, Layers, FileText, Terminal, Play, RefreshCw, Eye, Download,
+  CheckCircle, AlertTriangle, Clock, Key, Sliders, TrendingUp, Award, Activity,
+  History, FileCode, MapPin, Briefcase, Sun, Moon, Palette, XCircle, RotateCw,
+  PlayCircle, Trash2, Copy, Loader2, Zap, Globe
 } from "lucide-react";
 
+// Lazy-load components so they don't block initial render
+const AgentOrb = lazy(() => import("./components/AgentOrb"));
+import StatsCard3D from "./components/StatsCard3D";
+
 const API_BASE = typeof window !== "undefined"
-  ? (window.location.port === "3000" ? "http://localhost:8000" : window.location.origin)
+  ? (window.location.port === "3000" || window.location.port === "3001" ? "http://localhost:8000" : window.location.origin)
   : "http://localhost:8000";
+
+// Fallback model lists (used when dynamic fetch fails or provider has no API)
+const FALLBACK_MODELS = {
+  ollama: ["llama3.1:8b", "llama3:8b", "mistral", "gemma2", "qwen2", "phi3"],
+  openai: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"],
+  deepseek: ["deepseek-chat", "deepseek-coder"],
+  gemini: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
+  qwen: ["qwen-max", "qwen-plus", "qwen-turbo"],
+  bedrock: [
+    "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    "anthropic.claude-3-sonnet-20240229-v1:0",
+    "anthropic.claude-3-haiku-20240307-v1:0",
+    "meta.llama3-70b-instruct-v1:0",
+    "meta.llama3-8b-instruct-v1:0"
+  ]
+};
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -53,6 +53,12 @@ export default function Home() {
   const [heavyApiKeyInput, setHeavyApiKeyInput] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
   
+  // Dynamic model lists (fetched from provider APIs)
+  const [lightDynamicModels, setLightDynamicModels] = useState(null);
+  const [heavyDynamicModels, setHeavyDynamicModels] = useState(null);
+  const [lightModelLoading, setLightModelLoading] = useState(false);
+  const [heavyModelLoading, setHeavyModelLoading] = useState(false);
+  
   // Dynamic config active values
   const [activeConfig, setActiveConfig] = useState({
     api_key_configured: false,
@@ -66,7 +72,7 @@ export default function Home() {
 
   const [runs, setRuns] = useState([]);
   
-  // Input Form States (R6 Requirements)
+  // Input Form States
   const [businessIdeaInput, setBusinessIdeaInput] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [customConfigEnabled, setCustomConfigEnabled] = useState(false);
@@ -78,10 +84,105 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = useState("");
   
   const [viewingReportId, setViewingReportId] = useState(null);
+  const [reportMarkdown, setReportMarkdown] = useState("");
   const [reportTab, setReportTab] = useState("summary");
+  
+  // Research config states
+  const [enableWebSearch, setEnableWebSearch] = useState(true);
   
   const pollIntervalRef = useRef(null);
   const logEndRef = useRef(null);
+  const sseRef = useRef(null);
+
+  // ── Dynamic Model Fetching ────────────────────────────────────────────────
+  const fetchModelsForProvider = useCallback(async (provider, apiKey, setModels, setLoading) => {
+    if (!apiKey && provider !== "ollama") {
+      setModels(null); // Fall back to static list
+      return;
+    }
+    setLoading(true);
+    try {
+      const body = { provider, api_key: apiKey || undefined };
+      const res = await fetch(`${API_BASE}/api/models`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setModels(data.models || []);
+      } else {
+        setModels(null); // Use fallback
+      }
+    } catch {
+      setModels(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Auto-fetch models when provider or API key changes
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      fetchModelsForProvider(lightProviderInput, lightApiKeyInput, setLightDynamicModels, setLightModelLoading);
+    }, 500);
+    return () => clearTimeout(debounce);
+  }, [lightProviderInput, lightApiKeyInput, fetchModelsForProvider]);
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      fetchModelsForProvider(heavyProviderInput, heavyApiKeyInput, setHeavyDynamicModels, setHeavyModelLoading);
+    }, 500);
+    return () => clearTimeout(debounce);
+  }, [heavyProviderInput, heavyApiKeyInput, fetchModelsForProvider]);
+
+  // Helper: get model options (dynamic > fallback)
+  const getModelOptions = (provider, dynamicModels) => {
+    if (dynamicModels && dynamicModels.length > 0) {
+      return dynamicModels.map(m => m.id || m.name);
+    }
+    return FALLBACK_MODELS[provider] || [];
+  };
+
+  const syncConfigToBackend = async (lightProv, lightModel, lightKey, heavyProv, heavyModel, heavyKey, currentSessId = sessionId) => {
+    try {
+      const res = await fetch(`${API_BASE}/settings`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Session-ID": currentSessId
+        },
+        body: JSON.stringify({
+          light_provider: lightProv,
+          light_model: lightModel,
+          light_api_key: lightKey,
+          heavy_provider: heavyProv,
+          heavy_model: heavyModel,
+          heavy_api_key: heavyKey
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        setSaveStatus(errData.detail || "Failed to sync configuration with server.");
+        setTimeout(() => setSaveStatus(""), 4000);
+      }
+    } catch (err) {
+      setSaveStatus("Offline: saved locally, but server is unreachable.");
+      setTimeout(() => setSaveStatus(""), 4000);
+    }
+  };
+
+  const fetchRuns = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/runs`);
+      if (res.ok) {
+        const data = await res.json();
+        setRuns(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch runs", err);
+    }
+  };
 
   // Sync Settings from LocalStorage on mount
   useEffect(() => {
@@ -90,7 +191,7 @@ export default function Home() {
     setTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
 
-    // Generate or fetch session ID (L2 / L3)
+    // Generate or fetch session ID
     let sessId = sessionStorage.getItem("mr_session_id");
     if (!sessId) {
       sessId = "sess_" + Math.random().toString(36).substring(2, 7);
@@ -137,6 +238,7 @@ export default function Home() {
     
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (sseRef.current) { sseRef.current.close(); sseRef.current = null; }
     };
   }, []);
 
@@ -146,40 +248,6 @@ export default function Home() {
       logEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [runProgress]);
-
-  const syncConfigToBackend = async (lightProv, lightModel, lightKey, heavyProv, heavyModel, heavyKey, currentSessId = sessionId) => {
-    try {
-      await fetch(`${API_BASE}/settings`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Session-ID": currentSessId
-        },
-        body: JSON.stringify({
-          light_provider: lightProv,
-          light_model: lightModel,
-          light_api_key: lightKey,
-          heavy_provider: heavyProv,
-          heavy_model: heavyModel,
-          heavy_api_key: heavyKey
-        })
-      });
-    } catch (err) {
-      console.log("Backend offline, relying on client localstorage.");
-    }
-  };
-
-  const fetchRuns = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/runs`);
-      if (res.ok) {
-        const data = await res.json();
-        setRuns(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch runs", err);
-    }
-  };
 
   const handleSaveConfig = async (e) => {
     e.preventDefault();
@@ -212,15 +280,56 @@ export default function Home() {
     
     // Sync backend as backup
     await syncConfigToBackend(
-      lightProviderInput, 
-      lightModelInput, 
-      lightApiKeyInput, 
-      heavyProviderInput, 
-      heavyModelInput, 
-      heavyApiKeyInput,
-      sessionId
+      lightProviderInput, lightModelInput, lightApiKeyInput, 
+      heavyProviderInput, heavyModelInput, heavyApiKeyInput, sessionId
     );
   };
+
+  // ── SSE-powered progress streaming ────────────────────────────────────────
+  const connectSSE = useCallback((taskId) => {
+    // Close any existing SSE connection
+    if (sseRef.current) { sseRef.current.close(); sseRef.current = null; }
+    
+    const es = new EventSource(`${API_BASE}/api/runs/${taskId}/stream`);
+    sseRef.current = es;
+
+    es.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        
+        if (payload.type === "snapshot") {
+          // Full state snapshot — initial catch-up
+          setRunProgress(payload.data);
+        } else if (payload.type === "progress") {
+          // Incremental update
+          setRunProgress(prev => {
+            if (!prev) return { status: payload.status, logs: [payload.entry] };
+            return {
+              ...prev,
+              status: payload.status,
+              logs: [...prev.logs, payload.entry],
+            };
+          });
+        } else if (payload.type === "report_ready" || ["success", "failed", "cancelled"].includes(payload.status)) {
+          fetchRuns();
+          if (payload.status === "success" || payload.type === "report_ready") {
+            fetchReport(taskId);
+          }
+          es.close();
+          sseRef.current = null;
+        }
+      } catch (err) {
+        console.error("SSE parse error", err);
+      }
+    };
+
+    es.onerror = () => {
+      // SSE connection dropped — fall back to polling
+      es.close();
+      sseRef.current = null;
+      startPollingProgress(taskId);
+    };
+  }, []);
 
   const handleLaunchResearch = async (e) => {
     e.preventDefault();
@@ -243,6 +352,7 @@ export default function Home() {
     const payload = {
       idea: businessIdeaInput,
       location: locationInput,
+      enable_web_search: enableWebSearch,
       ui_model_config: {
         light_task: {
           provider: localLightProv,
@@ -276,7 +386,8 @@ export default function Home() {
         setCustomApiKey("");
         setCustomConfigEnabled(false);
         setActiveTab("tracker");
-        startPollingProgress(data.task_id);
+        // Try SSE first, fall back to polling
+        connectSSE(data.task_id);
         fetchRuns();
       } else {
         setErrorMsg(data.detail || "Failed to launch research task.");
@@ -286,13 +397,11 @@ export default function Home() {
     }
   };
 
+  // Polling fallback (used if SSE fails)
   const startPollingProgress = (taskId) => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     pollProgress(taskId);
-    
-    pollIntervalRef.current = setInterval(() => {
-      pollProgress(taskId);
-    }, 2000);
+    pollIntervalRef.current = setInterval(() => { pollProgress(taskId); }, 1500);
   };
 
   const pollProgress = async (taskId) => {
@@ -302,19 +411,73 @@ export default function Home() {
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         return;
       }
-      
       const data = await res.json();
       setRunProgress(data);
       
-      if (data.status === "success" || data.status === "failed") {
+      if (data.status === "success" || data.status === "failed" || data.status === "cancelled") {
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         fetchRuns();
-        if (data.status === "success") {
-          fetchReport(taskId);
-        }
+        if (data.status === "success") { fetchReport(taskId); }
       }
     } catch (err) {
       console.error("Error polling progress", err);
+    }
+  };
+
+  const handleCancelRun = async (taskId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/runs/${taskId}/cancel`, { method: "POST" });
+      if (res.ok) { pollProgress(taskId); }
+    } catch (err) {
+      console.error("Failed to cancel task", err);
+    }
+  };
+
+  const handleDeleteRun = async (taskId) => {
+    if (!window.confirm("Are you sure you want to delete this research?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/runs/${taskId}`, { method: "DELETE" });
+      if (res.ok) { fetchRuns(); }
+    } catch (err) {
+      console.error("Failed to delete task", err);
+    }
+  };
+
+  const handleRerun = (taskId) => {
+    const topicToRerun = runs.find(r => r.task_id === taskId)?.topic || "Market Research";
+    setBusinessIdeaInput(topicToRerun);
+    setLocationInput("");
+    triggerResearch(topicToRerun);
+  };
+  
+  const triggerResearch = async (topicStr) => {
+    setRunReport(null);
+    setRunProgress(null);
+    setErrorMsg("");
+    setActiveTab("tracker");
+    
+    try {
+      const payload = { idea: topicStr, location: "", enable_web_search: enableWebSearch };
+      const res = await fetch(`${API_BASE}/api/research`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        setErrorMsg(err.detail || "Failed to start research");
+        setActiveTab("dashboard");
+        return;
+      }
+      
+      const data = await res.json();
+      setActiveRunId(data.task_id);
+      connectSSE(data.task_id);
+      fetchRuns();
+    } catch (err) {
+      setErrorMsg("Failed to connect to backend server.");
+      setActiveTab("dashboard");
     }
   };
 
@@ -326,9 +489,14 @@ export default function Home() {
         setRunReport(data);
         setViewingReportId(taskId);
         setActiveTab("report");
+      } else {
+        const errData = await res.json();
+        setErrorMsg(errData.detail || "Something went wrong while retrieving the report. Please try again.");
+        setActiveTab("dashboard");
       }
     } catch (err) {
-      console.error("Error fetching report", err);
+      setErrorMsg("Failed to connect to backend server. Make sure it is running on port 8000.");
+      setActiveTab("dashboard");
     }
   };
 
@@ -343,7 +511,7 @@ export default function Home() {
     if (runObj && runObj.status === "success") {
       fetchReport(taskId);
     } else {
-      startPollingProgress(taskId);
+      connectSSE(taskId);
       setActiveTab("tracker");
     }
   };
@@ -401,6 +569,52 @@ ${runReport.critique_notes}
     }
   };
 
+  // Helper to render a model dropdown with dynamic/fallback options
+  const renderModelSelect = (provider, currentModel, setModel, dynamicModels, isLoading) => {
+    const options = getModelOptions(provider, dynamicModels);
+    const isDynamic = dynamicModels && dynamicModels.length > 0;
+    
+    return (
+      <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+        <div style={{ position: 'relative' }}>
+          <select 
+            className="input-field"
+            value={options.includes(currentModel) ? currentModel : "custom"}
+            onChange={(e) => {
+              if (e.target.value !== "custom") { setModel(e.target.value); }
+              else { setModel(""); }
+            }}
+          >
+            {options.map(model => (
+              <option key={model} value={model}>{model}</option>
+            ))}
+            <option value="custom">Custom Model...</option>
+          </select>
+          {isLoading && (
+            <div style={{ position: 'absolute', right: '40px', top: '50%', transform: 'translateY(-50%)' }}>
+              <Loader2 size={16} className="spin" style={{ color: 'var(--primary)' }} />
+            </div>
+          )}
+        </div>
+        {isDynamic && (
+          <span className="input-hint" style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>
+            <Zap size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {options.length} models fetched live from {provider}
+          </span>
+        )}
+        {(!options.includes(currentModel) || currentModel === "") && (
+          <input 
+            type="text" 
+            className="input-field" 
+            placeholder="Type custom model name..."
+            value={currentModel}
+            onChange={(e) => setModel(e.target.value)}
+            required
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
@@ -441,35 +655,20 @@ ${runReport.critique_notes}
         
         <div className="sidebar-footer" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <div className="theme-switcher">
-            <button 
-              type="button"
-              className={`theme-btn ${theme === "dark" ? "active" : ""}`} 
-              onClick={() => changeTheme("dark")}
-              title="Dark Theme"
-            >
+            <button type="button" className={`theme-btn ${theme === "dark" ? "active" : ""}`} onClick={() => changeTheme("dark")} title="Dark Theme">
               <Moon size={16} />
             </button>
-            <button 
-              type="button"
-              className={`theme-btn ${theme === "light" ? "active" : ""}`} 
-              onClick={() => changeTheme("light")}
-              title="Light Theme"
-            >
+            <button type="button" className={`theme-btn ${theme === "light" ? "active" : ""}`} onClick={() => changeTheme("light")} title="Light Theme">
               <Sun size={16} />
             </button>
-            <button 
-              type="button"
-              className={`theme-btn ${theme === "solarized" ? "active" : ""}`} 
-              onClick={() => changeTheme("solarized")}
-              title="Solarized Theme"
-            >
+            <button type="button" className={`theme-btn ${theme === "solarized" ? "active" : ""}`} onClick={() => changeTheme("solarized")} title="Solarized Theme">
               <Palette size={16} />
             </button>
           </div>
           <div className="status-badge">
             <span className={`status-dot ${activeConfig.api_key_configured ? "active" : ""}`}></span>
             <span className="status-label">
-              API Keys: {activeConfig.api_key_configured ? "LocalStorage Active" : "Disconnected"}
+              API Keys: {activeConfig.api_key_configured ? "Active" : "Disconnected"}
             </span>
           </div>
         </div>
@@ -489,7 +688,7 @@ ${runReport.critique_notes}
             <p>
               {activeTab === "dashboard" && "Launch and audit dynamic config-driven agent workflows."}
               {activeTab === "new_research" && "Route tasks intelligently between Light and Heavy models."}
-              {activeTab === "config" && "Manage API credentials and model configurations (LocalStorage)."}
+              {activeTab === "config" && "Manage API credentials and model configurations."}
               {activeTab === "tracker" && `Agent Run: ${activeRunId}`}
               {activeTab === "report" && `Intel generated for: ${runReport?.topic}`}
             </p>
@@ -509,21 +708,24 @@ ${runReport.critique_notes}
           {activeTab === "dashboard" && (
             <div className="tab-dashboard animate-fade-in">
               <div className="stats-grid">
-                <div className="stats-card glass-panel">
-                  <Activity size={24} className="stat-icon-active" />
-                  <div className="stat-value">{runs.length}</div>
-                  <div className="stat-label">Total Orchestrations</div>
-                </div>
-                <div className="stats-card glass-panel">
-                  <CheckCircle size={24} className="stat-icon-success" />
-                  <div className="stat-value">{runs.filter(r => r.status === "success").length}</div>
-                  <div className="stat-label">Completed Reports</div>
-                </div>
-                <div className="stats-card glass-panel">
-                  <Clock size={24} className="stat-icon-pending" />
-                  <div className="stat-value">{runs.filter(r => r.status === "running").length}</div>
-                  <div className="stat-label">Active Agents</div>
-                </div>
+                <StatsCard3D
+                  icon={<Activity size={24} className="stat-icon-active" />}
+                  value={runs.length}
+                  label="Total Orchestrations"
+                  glowColor="var(--primary)"
+                />
+                <StatsCard3D
+                  icon={<CheckCircle size={24} className="stat-icon-success" />}
+                  value={runs.filter(r => r.status === "success").length}
+                  label="Completed Reports"
+                  glowColor="var(--accent)"
+                />
+                <StatsCard3D
+                  icon={<Clock size={24} className="stat-icon-pending" />}
+                  value={runs.filter(r => r.status === "running").length}
+                  label="Active Agents"
+                  glowColor="var(--secondary)"
+                />
               </div>
               
               <div className="dashboard-layout">
@@ -544,8 +746,8 @@ ${runReport.critique_notes}
                     </div>
                   ) : (
                     <div className="history-list">
-                      {runs.map((run) => (
-                        <div key={run.task_id} className="history-row glass-card">
+                      {runs.map((run, idx) => (
+                        <div key={run.task_id} className="history-row glass-card" style={{ animationDelay: `${idx * 60}ms` }}>
                           <div className="history-info">
                             <h4>{run.topic}</h4>
                             <span className="run-id">ID: {run.task_id.substring(0, 8)}...</span>
@@ -569,6 +771,20 @@ ${runReport.critique_notes}
                               {run.status === "success" ? <Eye size={14} /> : <Terminal size={14} />}
                               <span>{run.status === "success" ? "View Report" : "Logs"}</span>
                             </button>
+                            
+                            <button className="btn-secondary btn-sm" onClick={() => handleRerun(run.task_id)} title="Restart / Rerun">
+                              <PlayCircle size={14} />
+                              <span>Restart</span>
+                            </button>
+                            
+                            <button 
+                              className="btn-secondary btn-sm" 
+                              style={{ color: '#ef4444', borderColor: '#ef4444', padding: '6px' }}
+                              onClick={() => handleDeleteRun(run.task_id)}
+                              title="Delete Research"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -579,7 +795,7 @@ ${runReport.critique_notes}
             </div>
           )}
 
-          {/* TAB 2: NEW RESEARCH (BUSINESS IDEA + LOCATION INPUTS) */}
+          {/* TAB 2: NEW RESEARCH */}
           {activeTab === "new_research" && (
             <div className="tab-new-research glass-panel animate-fade-in">
               <form onSubmit={handleLaunchResearch} className="research-form">
@@ -613,6 +829,19 @@ ${runReport.critique_notes}
                       onChange={(e) => setBusinessIdeaInput(e.target.value)}
                       required
                     />
+                  </div>
+                  
+                  <div className="input-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="enable-web-search"
+                      checked={enableWebSearch} 
+                      onChange={(e) => setEnableWebSearch(e.target.checked)}
+                      style={{ width: '18px', height: '18px', accentColor: 'var(--accent-color)' }}
+                    />
+                    <label htmlFor="enable-web-search" style={{ margin: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Globe size={16} /> Enable Web Search (DuckDuckGo)
+                    </label>
                   </div>
                   
                   <div className="form-group">
@@ -666,18 +895,18 @@ ${runReport.critique_notes}
             </div>
           )}
 
-          {/* TAB 3: CONFIG PANEL (MODEL MANAGER UI) */}
+          {/* TAB 3: CONFIG PANEL */}
           {activeTab === "config" && (
             <div className="tab-config glass-panel animate-fade-in">
               <form onSubmit={handleSaveConfig} className="config-form">
                 <h2>Model Configuration Manager</h2>
                 <p className="form-description">
-                  Configure keys and models mapping. API keys are persisted securely in your browser's **LocalStorage** for zero-backend-cost.
+                  Configure keys and models mapping. Models are fetched dynamically when an API key is provided.
                 </p>
                 
                 {saveStatus && (
-                  <div className={`alert-message ${saveStatus.includes("saved") ? "success" : "error"}`}>
-                    {saveStatus.includes("saved") ? <CheckCircle size={20} /> : <AlertTriangle size={20} />}
+                  <div className={`alert-message ${saveStatus.includes("saved") ? "success" : "info"}`}>
+                    {saveStatus.includes("saved") ? <CheckCircle size={20} /> : <Loader2 size={20} className="spin" />}
                     <span>{saveStatus}</span>
                   </div>
                 )}
@@ -703,19 +932,14 @@ ${runReport.critique_notes}
                           <option value="deepseek">DeepSeek</option>
                           <option value="gemini">Gemini</option>
                           <option value="qwen">Qwen</option>
+                          <option value="bedrock">AWS Bedrock</option>
+                          <option value="anthropic">Anthropic</option>
                         </select>
                       </div>
                       
                       <div className="form-group">
                         <label>Model Name</label>
-                        <input 
-                          type="text" 
-                          className="input-field" 
-                          placeholder="e.g. llama3.1:8b"
-                          value={lightModelInput}
-                          onChange={(e) => setLightModelInput(e.target.value)}
-                          required
-                        />
+                        {renderModelSelect(lightProviderInput, lightModelInput, setLightModelInput, lightDynamicModels, lightModelLoading)}
                       </div>
                     </div>
                     
@@ -727,11 +951,16 @@ ${runReport.critique_notes}
                       <input 
                         type="password" 
                         className="input-field"
-                        placeholder={activeConfig.light_api_key_masked && activeConfig.light_api_key_masked !== "Not Configured" ? `Currently: ${activeConfig.light_api_key_masked} (Enter to overwrite)` : "Paste Provider API Key"}
+                        placeholder={
+                          lightProviderInput === "bedrock" ? "ACCESS_KEY:SECRET_KEY:REGION[:SESSION_TOKEN]" : 
+                          activeConfig.light_api_key_masked && activeConfig.light_api_key_masked !== "Not Configured" ? `Currently: ${activeConfig.light_api_key_masked} (Enter to overwrite)` : "Paste Provider API Key"
+                        }
                         value={lightApiKeyInput}
                         onChange={(e) => setLightApiKeyInput(e.target.value)}
                       />
-                      <span className="input-hint">Used dynamically for the Light Task agents. Bypassed for Ollama.</span>
+                      <span className="input-hint">
+                        {lightApiKeyInput ? "Models will auto-fetch from provider" : "Enter an API key to fetch available models dynamically"}
+                      </span>
                     </div>
                   </div>
                   
@@ -755,19 +984,14 @@ ${runReport.critique_notes}
                           <option value="deepseek">DeepSeek</option>
                           <option value="gemini">Gemini</option>
                           <option value="qwen">Qwen</option>
+                          <option value="bedrock">AWS Bedrock</option>
+                          <option value="anthropic">Anthropic</option>
                         </select>
                       </div>
                       
                       <div className="form-group">
                         <label>Model Name</label>
-                        <input 
-                          type="text" 
-                          className="input-field" 
-                          placeholder="e.g. llama3.1:8b"
-                          value={heavyModelInput}
-                          onChange={(e) => setHeavyModelInput(e.target.value)}
-                          required
-                        />
+                        {renderModelSelect(heavyProviderInput, heavyModelInput, setHeavyModelInput, heavyDynamicModels, heavyModelLoading)}
                       </div>
                     </div>
                     
@@ -779,11 +1003,16 @@ ${runReport.critique_notes}
                       <input 
                         type="password" 
                         className="input-field"
-                        placeholder={activeConfig.heavy_api_key_masked && activeConfig.heavy_api_key_masked !== "Not Configured" ? `Currently: ${activeConfig.heavy_api_key_masked} (Enter to overwrite)` : "Paste Provider API Key"}
+                        placeholder={
+                          heavyProviderInput === "bedrock" ? "ACCESS_KEY:SECRET_KEY:REGION[:SESSION_TOKEN]" : 
+                          activeConfig.heavy_api_key_masked && activeConfig.heavy_api_key_masked !== "Not Configured" ? `Currently: ${activeConfig.heavy_api_key_masked} (Enter to overwrite)` : "Paste Provider API Key"
+                        }
                         value={heavyApiKeyInput}
                         onChange={(e) => setHeavyApiKeyInput(e.target.value)}
                       />
-                      <span className="input-hint">Used dynamically for the Heavy Task agents. Bypassed for Ollama.</span>
+                      <span className="input-hint">
+                        {heavyApiKeyInput ? "Models will auto-fetch from provider" : "Enter an API key to fetch available models dynamically"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -798,10 +1027,43 @@ ${runReport.critique_notes}
           {/* TAB 4: TRACKER */}
           {activeTab === "tracker" && runProgress && (
             <div className="tab-tracker animate-fade-in">
+              {/* 3D Agent Visualization */}
+              <div className="glass-panel" style={{ padding: "16px", marginBottom: "16px" }}>
+                <Suspense fallback={<div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader2 size={24} className="spin" /></div>}>
+                  <AgentOrb activeStageIndex={getActiveStageIndex()} status={runProgress.status} />
+                </Suspense>
+              </div>
+
               <div className="tracker-header glass-panel">
-                <div className="tracker-meta">
-                  <h3>Agent Workflow for: <span className="highlight">"{runProgress.logs[0]?.message.split("'")[1] || "Research"}"</span></h3>
-                  <span>Status: <strong>{runProgress.status.toUpperCase()}</strong></span>
+                <div className="tracker-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3>Agent Workflow for: <span className="highlight">&quot;{runProgress.logs[0]?.message.split("'")[1] || "Research"}&quot;</span></h3>
+                    <span>Status: <strong className={runProgress.status}>{runProgress.status.toUpperCase()}</strong></span>
+                  </div>
+                  
+                  <div className="tracker-controls" style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn-secondary" onClick={() => pollProgress(activeRunId)} title="Refresh Logs">
+                      <RotateCw size={16} />
+                      <span className="hide-mobile">Refresh</span>
+                    </button>
+                    
+                    {runProgress.status === "running" ? (
+                      <button 
+                        className="btn-secondary" 
+                        style={{ color: '#ef4444', borderColor: '#ef4444' }}
+                        onClick={() => handleCancelRun(activeRunId)}
+                        title="Cancel Research"
+                      >
+                        <XCircle size={16} />
+                        <span className="hide-mobile">Cancel</span>
+                      </button>
+                    ) : (
+                      <button className="btn-primary" onClick={() => handleRerun(activeRunId)} title="Rerun Research">
+                        <PlayCircle size={16} />
+                        <span className="hide-mobile">Rerun</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="timeline-stepper">
@@ -829,9 +1091,22 @@ ${runReport.critique_notes}
               </div>
               
               <div className="tracker-logs glass-panel">
-                <div className="logs-header">
-                  <Terminal size={18} />
-                  <span>Execution Stream Logs</span>
+                <div className="logs-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Terminal size={18} />
+                    <span>Execution Stream Logs</span>
+                  </div>
+                  <button 
+                    className="btn-secondary btn-sm"
+                    title="Copy Logs to Clipboard"
+                    onClick={() => {
+                      const logText = runProgress.logs.map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] [${l.stage}] ${l.message}`).join('\n');
+                      navigator.clipboard.writeText(logText);
+                    }}
+                  >
+                    <Copy size={14} />
+                    <span>Copy</span>
+                  </button>
                 </div>
                 <div className="logs-console">
                   {runProgress.logs.map((log, i) => (

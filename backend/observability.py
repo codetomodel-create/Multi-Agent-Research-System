@@ -4,6 +4,7 @@ import re
 import getpass
 import asyncio
 import yaml
+import threading
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
@@ -72,6 +73,13 @@ def scrub_sensitive_data(data: Any) -> Any:
     else:
         return data
 
+_log_lock = threading.Lock()
+
+def _write_with_lock(filepath: str, content: str):
+    with _log_lock:
+        with open(filepath, "a", encoding="utf-8") as f:
+            f.write(content)
+
 def write_session_log(
     api_name: str, 
     agent_name: str, 
@@ -80,7 +88,7 @@ def write_session_log(
     scenario: str, 
     output_or_error_data: Any
 ):
-    """Synchronous file I/O log writer adhering to format L5."""
+    """Synchronous file I/O for logging. Writes to local disk."""
     ist_time = get_ist_time()
     
     # 1. Scrub keys
@@ -122,9 +130,7 @@ def write_session_log(
     filepath = get_log_filepath(session_id)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     
-    # Write (append mode)
-    with open(filepath, "a", encoding="utf-8") as f:
-        f.write(log_content)
+    _write_with_lock(filepath, log_content)
 
 async def log_session_async(
     api_name: str, 
