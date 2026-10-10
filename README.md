@@ -9,6 +9,8 @@ pinned: false
 
 # AI Market Research Assistant
 
+## 📹 Product Walkthrough
+> **[▶ Watch the full walkthrough on Google Drive](https://drive.google.com/file/d/1acI-uxsr9jE1vtX2DsCmHUD09XZICYa7/view?usp=drive_link)**
 
 The AI Market Research Assistant is a config-driven, multi-agent system designed to generate premium C-suite business reports from a single business idea and target location. It utilizes a combination of light and heavy LLMs to optimize token consumption while maintaining high analytical quality.
 
@@ -50,3 +52,6 @@ Then follow the speaking script in `docs/LINKEDIN_DEMO.md`. Open `http://localho
 
 ## Full Documentation
 For the comprehensive project specification, architecture flowcharts, visual workflows, and deployment guides, please see `project_documentation.xlsx` or `project_documentation.md`.
+
+## Video Walkthrough
+[▶ Watch on Google Drive](https://drive.google.com/file/d/1acI-uxsr9jE1vtX2DsCmHUD09XZICYa7/view?usp=drive_link)

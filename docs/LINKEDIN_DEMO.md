@@ -1,5 +1,7 @@
 # LinkedIn Demo Pack — MarketAgent Observatory
 
+> **[▶ Watch the product walkthrough on Google Drive](https://drive.google.com/file/d/1acI-uxsr9jE1vtX2DsCmHUD09XZICYa7/view?usp=drive_link)**
+
 Use this file as a teleprompter. Read the **Say** lines out loud. Follow the **On screen** clicks. Default cut: **8 minutes, recorded, mixed audience** (engineers + hiring managers).
 
 | | |

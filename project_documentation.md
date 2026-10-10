@@ -1,5 +1,7 @@
 # AI Market Research Assistant (Config-Driven Multi-Agent System)
 
+> **[▶ Watch the full product walkthrough on Google Drive](https://drive.google.com/file/d/1acI-uxsr9jE1vtX2DsCmHUD09XZICYa7/view?usp=drive_link)**
+
 A full-stack, config-driven AI agent pipeline that gathers market details dynamically, evaluates drafts using a multi-agent critique layout, and compiles structured C-suite intelligence reports.
 
 ---
