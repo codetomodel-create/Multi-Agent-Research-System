@@ -10,14 +10,20 @@ The **AI Market Research Assistant** is designed to generate premium, comprehens
 ---
 
 ## ⚡ Key Features
-* **Multi-Provider LLM Router**: Powered by `litellm` to support Ollama, OpenAI, DeepSeek, Gemini, Qwen, and OpenAI-compatible endpoints natively.
+* **Multi-Provider LLM Router**: Powered by `litellm` to support Ollama, OpenAI, Anthropic, DeepSeek, Gemini, Qwen, Bedrock and OpenAI-compatible endpoints natively.
 * **Cost-Optimized Task Routing**: routes Research, Competitor, Pricing, and Trend tasks to a "Light Model" and routes Coordinator, Writer, and Fact Checker tasks to a "Heavy Model".
-* **Dynamic UI Model Switching**: Allows users to select providers and models for light/heavy tasks and input API keys directly in the UI.
-* **Premium Multi-Theme Support**: Features three custom-designed, high-contrast themes: Dark, Light, and Solarized.
-* **Non-Blocking Observability System**: Writes date-segregated session logs in Indian Standard Time (IST) using background threadpools to ensure the server event loop remains unblocked.
-* **Zero-Leakage Key Masking**: Recursively scrubs credentials, API keys, and passwords from all files written to disk.
-* **Real-time Terminal Logs Stream**: HTTP polling console showing pipeline steps as they execute.
-* **C-Suite Report Dashboard**: Clean tabbed panels for Executive Summary, Market Overview, SWOT Analysis, Critique Log, and Raw JSON data.
+* **Live 3D Observatory**: a single WebGL canvas renders the pipeline as a constellation — each agent is an instanced luminous body whose colour, pulse and orbit follow real run state.
+* **Pipeline Timeline & Scrubber**: per-stage duration, token count and cost, plus a scrubber that replays the run to any point.
+* **Command Palette (`Ctrl`/`Cmd`+`K`)**: run research, jump to a past run, switch theme or model, open any report tab — the entire product is keyboard-reachable.
+* **Run Comparison**: diff two completed runs section by section (SWOT, pricing, competitors and the rest).
+* **Reading Mode & Export**: a distraction-free, print/PDF-friendly overlay, plus JSON/Markdown download, section copy and shareable deep links.
+* **Session Resilience**: in-flight runs are restored after a reload, navigation away mid-run is guarded, and a stalled stream raises a reconnect banner.
+* **Dynamic UI Model Switching**: providers and models per tier with search, masked key entry and a "test connection" probe that reports latency and reachability.
+* **Premium Multi-Theme Support**: three themes — Dark, Light and Solarized — driven by one token layer that the DOM *and* the 3D materials both read.
+* **Progressive Enhancement**: no WebGL, a small/low-power device, `prefers-reduced-motion`, or the canvas-off preference all fall back to a static token gradient with no animation loop.
+* **Non-Blocking Observability System**: date-segregated session logs in Indian Standard Time (IST) written from background threadpools.
+* **Zero-Leakage Key Masking**: recursively scrubs credentials, API keys and passwords from everything written to disk.
+* **Offline Fixture Mode (`MOCK_LLM=1`)**: the entire pipeline runs deterministically with no provider credentials, no Ollama and no network.
 
 ---
 
@@ -25,28 +31,43 @@ The **AI Market Research Assistant** is designed to generate premium, comprehens
 
 ```
 Multi-Agent Research System/
-├── project_documentation.md      # Consolidated project overview, setup & running guide
+├── project_documentation.md      # This document
+├── pytest.ini                    # Backend test configuration
 ├── config/
-│   └── config.yaml               # Base truth configuration (R2 / R3)
+│   └── config.yaml               # Base truth configuration + all prompts
 ├── backend/
-│   ├── config.json               # Runtime UI configuration overrides (R2)
-│   ├── main.py                   # FastAPI monolith backend (R1 / R2 / R5)
-│   ├── agent_orchestrator.py     # Multi-agent logic using LiteLLM (R3 / R4 / R6)
-│   ├── search_tool.py            # DuckDuckGo search utility wrapper
-│   ├── observability.py          # Non-blocking thread log engine (IST/masking)
-│   ├── test_orchestrator.py      # Offline/online pipeline test script
-│   └── test_live_apis.py         # HTTP E2E backend integration test script
-├── frontend/                     # Next.js App Router (R7)
-│   ├── package.json
-│   ├── app/
-│   │   ├── layout.js             # HTML metadata & styles import
-│   │   ├── page.js               # Main client view with LocalStorage configuration
-│   │   └── globals.css           # Color tokens, multi-theme styles, log panels
-└── logs/                         # Top-level root logs directory
-└── reports/                      # Generated task reports directory
+│   ├── config.json               # Runtime UI configuration overrides
+│   ├── main.py                   # FastAPI monolith: routes, Pydantic models, SSE, static mount
+│   ├── agent_orchestrator.py     # Pipeline, LiteLLM invocation, stage timing/cost, MOCK_LLM fixtures
+│   ├── demo_seed.py              # LinkedIn Compare fixtures + launch topic
+│   ├── linkedin_demo.py          # One-command presenter: MOCK_LLM + seed + ?demo=1
+│   ├── search_tool.py            # DuckDuckGo wrapper (fixture results under MOCK_LLM)
+│   ├── observability.py          # Non-blocking thread log engine (IST + masking)
+│   └── tests/                    # pytest suite (unit + API contract)
+├── start-linkedin-demo.sh        # Windows/macOS launcher for the speaking script
+├── start-linkedin-demo.cmd
+├── docs/LINKEDIN_DEMO.md         # End-to-end LinkedIn speaking script
+├── frontend/                     # Next.js App Router, statically exported to frontend/out
+│   ├── playwright.config.mjs     # E2E harness: real browser vs. real server, MOCK_LLM=1
+│   ├── e2e/                      # journey · resilience · a11y · performance · responsive
+│   └── app/
+│       ├── layout.js             # Metadata, viewport, pre-paint theme bootstrap
+│       ├── page.js               # Workspace shell: state, views, commands
+│       ├── globals.css           # THE token layer + theme remaps + component styles
+│       ├── lib/
+│       │   ├── api.js            # Every network call, one error contract
+│       │   ├── hooks.js          # External stores: media, WebGL, localStorage, URL hash
+│       │   ├── theme.js          # Theme application + the 3D token bridge
+│       │   ├── format.js         # Duration/cost/token/prose formatting
+│       │   └── useRunStream.js   # SSE with polling fallback and stall detection
+│       └── components/
+│           ├── canvas/           # SceneCanvas · Observatory · Effects
+│           └── *.js              # Palette, drawer, timeline, log terminal, report, compare…
+├── logs/                         # Session logs, date-segregated
+└── reports/                      # Generated task reports
     └── [task_id]/
         ├── meta.json             # Task metadata & models utilized
-        ├── progress.json         # Logs console list (polling updates)
+        ├── progress.json         # Status, stage table, totals, log entries
         └── report.json           # C-suite structured report data
 ```
 
@@ -79,120 +100,228 @@ graph TD
 
 ---
 
-## 🛠️ REST API Specs
-Exposed on port `8000`:
-* **`GET /settings` & `GET /api/settings`**: Returns currently resolved configuration mapping (masked API keys, active light & heavy provider and model names).
-* **`POST /settings` & `POST /api/settings`**: Saves dynamic overrides (API key, light/heavy provider, model) to `backend/config.json`.
-* **`GET /api/runs`**: Scans the `reports/` folder, reads tasks metadata, and returns a sorted history of runs.
-* **`POST /research` & `POST /api/research`**: Generates a unique task UUID, creates directory metadata, launches the multi-agent LiteLLM research pipeline in a background thread, and immediately returns the `task_id` (queued).
-* **`GET /api/runs/{task_id}/progress`**: Exposes progress steps and stage logs (polled by the Next.js logs terminal).
-* **`GET /api/runs/{task_id}/report`**: Returns the finalized structured C-suite JSON report once completed.
+## 🛠️ REST API Contract
+
+Served on port `8000` in development; in a container the same process also serves the
+static UI at `/`. Every row below is covered by a test in `backend/tests/`.
+
+| Method | Path | Request | Success | Errors |
+| --- | --- | --- | --- | --- |
+| GET | `/api/health` | — | `{status, reports_dir_writable, config_yaml_present, mock_llm}` | — |
+| GET | `/api/demo` | — | `{status, seeded, runs[], launch}` — inspect only, no writes | — |
+| POST | `/api/demo/seed` | `{}` | Writes the two LinkedIn Compare fixtures; idempotent | — |
+| GET | `/api/config` · `/settings` · `/api/settings` | — | Resolved config with **masked** keys | — |
+| POST | `/api/config` · `/settings` · `/api/settings` | `SettingsSaveRequest` | `{status, message}` | 500 write failure |
+| GET | `/api/runs` | — | `RunSummary[]` incl. `status`, `duration_ms`, `tokens`, `cost_usd` | — |
+| POST | `/research` · `/api/research` | `ResearchRequest` | `{task_id, topic, status:"queued"}` | 400 no topic · 422 oversized · 500 launch failure |
+| GET | `/api/runs/{id}/progress` | — | `{status, stages[], totals, logs[]}` | 404 unknown/invalid id · 500 unreadable |
+| GET | `/api/runs/{id}/stream` | — | SSE: `snapshot` → `progress`* → `report_ready` | 404 unknown id |
+| GET | `/api/runs/{id}/report` | — | `ReportResponse` | 202 still generating · 404 unknown · 500 failed run |
+| GET | `/api/runs/{id}/export?format=json\|markdown` | — | File download | 202/404/500 as above · 422 bad format |
+| GET | `/api/runs/compare?a=&b=` | — | `{a, b, sections[]}` per-section diff | 400 same id · 404 unknown id |
+| POST | `/api/runs/{id}/cancel` | — | `{status:"success"\|"ignored", message}` | 404 unknown id |
+| POST | `/api/runs/{id}/retry` | — | `{task_id, topic, status:"queued"}` (new id) | 404 unknown · 422 no topic |
+| DELETE | `/api/runs/{id}` | — | `{status, message}` | 404 unknown · 500 delete failure |
+| POST | `/api/models` | `ModelFetchRequest` | `{provider, models[]}` | 400 bad provider/key/base_url · 502 provider failure |
+| POST | `/api/providers/test` | `{provider, api_key?, base_url?}` | `{reachable, latency_ms, model_count, detail}` | 422 no provider |
+| GET | `/*` | — | Static export from `frontend/out` (mounted last) | — |
+
+Task ids are validated against `^[A-Za-z0-9_-]{1,64}$` and resolved inside `REPORTS_DIR`;
+anything that escapes returns **404**, so probing cannot distinguish invalid from missing.
+API keys are never echoed back by any endpoint.
+
+---
+
+## 🎨 Design System
+
+Aesthetic anchor: **"observatory"** — a dark control room where each agent is a luminous
+body and the report is the constellation they resolve into.
+
+Every colour, space, radius, duration and z-index lives in one token layer at the top of
+[frontend/app/globals.css](frontend/app/globals.css). Themes re-map semantic tokens **only**;
+no component hard-codes a value.
+
+| Group | Tokens | Notes |
+| --- | --- | --- |
+| Type | `--font-sans` `--font-display` `--font-mono`, `--t-2xs` … `--t-3xl` | One display face (Outfit) for headings, Inter for data, JetBrains Mono for logs. Body line-height 1.6, prose capped at `--measure` (72ch). |
+| Space | `--sp-1` … `--sp-16` | 4px base scale. |
+| Radius | `--r-sm` `--r-md` `--r-lg` `--r-xl` `--r-full` | |
+| Motion | `--ease`, `--dur-1` (100ms) `--dur-2` (200ms) `--dur-3` (400ms) | One easing family, three durations. Motion signals causality; it never decorates. |
+| Elevation | `--e-1` … `--e-4` | A real shadow ramp, per theme. |
+| z-index | `--z-canvas` `--z-content` `--z-sticky` `--z-drawer` `--z-overlay` `--z-toast` `--z-palette` | The full ladder; no ad-hoc values. |
+| Surface | `--bg-base` `--surface` `--surface-solid` `--surface-2` `--border` `--scrim` `--input-bg` `--console-bg` | `--surface` is a blurred **and** opaque scrim, so HTML over the canvas always passes contrast. |
+| Colour | `--primary` `--secondary` `--accent` `--success` `--danger` `--warning` `--info` `--text` `--text-muted` `--text-dim` `--focus-ring` | |
+| 3D bridge | `--three-bg` `--three-primary` `--three-secondary` `--three-accent` `--three-danger` `--three-dim` `--three-star` | Hex mirrors of the same ramp, in a form `THREE.Color` can parse. Read through `useSceneTokens()`, which watches `data-theme`, so the canvas re-themes with the DOM. |
+
+**State completeness.** Every surface defines empty, loading (skeleton — never a spinner),
+partial, error (with a recovery action) and success.
+
+**Error contract.** Transient background events → toast. Field-level problems → inline
+message tied to the input with `aria-describedby`. Unreachable backend → persistent banner
+with retry. Nothing is swallowed.
+
+---
+
+## 🌌 The 3D Layer & Its Fallbacks
+
+One `<Canvas>` for the whole app, mounted in [frontend/app/components/canvas/SceneCanvas.js](frontend/app/components/canvas/SceneCanvas.js).
+
+* **Scene graph** — an instanced starfield (`THREE.Points`, seeded so it is identical on
+  every load), one `instancedMesh` for all seven agent bodies, one `lineSegments` for all
+  nine links, an ambient + two-point lighting rig, and a camera rig that drifts gently and
+  parks beside each agent during the onboarding tour.
+* **Budget** — repeated geometry is instanced, nothing is allocated inside `useFrame`, and
+  every geometry built with `new` is disposed in an effect cleanup. Post-processing is two
+  effects (bloom + vignette), lazy-loaded and only at medium/high quality with motion on.
+* **Quality** — Low/Medium/High change DPR, sphere segments, star count, antialiasing and
+  whether post-processing mounts. Three consecutive seconds under 40fps step the level down
+  automatically; it never steps back up on its own.
+
+The canvas is **progressive enhancement**. It is replaced by a static token gradient when:
+
+| Condition | Behaviour |
+| --- | --- |
+| No WebGL context | `data-scene="static"` gradient; no Three.js is even imported |
+| Viewport ≤ 860px / touch device | Same static gradient — the GPU is never engaged on a low-power device |
+| `prefers-reduced-motion: reduce` | Canvas still renders, but `frameloop="demand"` **stops the loop entirely**; CSS animations are disabled too |
+| "3D canvas" preference off | Static gradient, persisted in LocalStorage across sessions |
+| Scene chunk still loading | `<Suspense>` fallback renders the gradient |
+
+Accessibility: the canvas is `aria-hidden` throughout — it is decoration over a complete
+DOM UI. Landmarks, a skip link, focus traps in overlays, `aria-live` pipeline status and a
+fully keyboard-navigable journey are all part of the DOM layer, not the canvas.
+
+---
+
+## 🧪 Offline Fixture Mode (`MOCK_LLM=1`)
+
+Set `MOCK_LLM=1` and the whole pipeline runs deterministically with **no provider
+credentials, no Ollama and no network**:
+
+* `litellm.completion` is replaced by a fixture responder that returns stage-appropriate
+  text and a report derived from the topic — two runs of the same topic produce identical
+  reports.
+* `web_search()` returns fixture results instead of calling DuckDuckGo.
+* Token counts are fixed, so per-stage token/cost readouts are stable.
+* `GET /api/health` reports `mock_llm: true` so a client can tell.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MOCK_LLM` | unset | `1`/`true`/`yes`/`on` enables the fixture pipeline |
+| `MOCK_LLM_DELAY_MS` | `0` | Artificial per-call latency. The E2E harness sets `600` so mid-run states (cancel, live progress) are reachable |
+| `REPORTS_DIR` | `<workspace>/reports` | Redirect run storage — used by E2E so tests never touch your runs |
+| `ALLOWED_ORIGINS` | localhost:3000/3001 | Comma-separated CORS allow-list |
+
+A per-request alternative also still works: any API key beginning with `MOCK` activates the
+same fixture path for that run only.
+
+```bash
+# One-off offline run
+MOCK_LLM=1 py -m uvicorn backend.main:app --port 8000
+```
 
 ---
 
 ## 🚀 Setup & Installation
 
 ### Prerequisites
-* **macOS** or compatible Unix/Linux shell.
-* **Python 3.10+** (tested on 3.11).
-* **Node.js 18+** with `npm` package manager.
+* **Python 3.10+** (tested on 3.11). On Windows the `py` launcher is used below; on
+  macOS/Linux substitute `python3`.
+* **Node.js 18+** with `npm`.
 
-### 1. Set Up Backend API
-Create a Python virtual environment and install dependencies:
+### 1. Backend
 ```bash
-# Navigate to the workspace root
-cd "/Users/apple/Desktop/Multi-Agent Research System"
-
-# Initialize virtual env
-python3 -m venv backend/.venv
-source backend/.venv/bin/activate
-
-# Upgrade pip and install dependencies
-pip install --upgrade pip
-pip install fastapi uvicorn litellm PyYAML duckduckgo-search pydantic python-dotenv
+# From the repository root
+py -m venv .venv
+.venv/Scripts/python -m pip install -r backend/requirements-dev.txt   # runtime + pytest
+# macOS/Linux: python3 -m venv .venv && .venv/bin/pip install -r backend/requirements-dev.txt
 ```
 
-### 2. Set Up Frontend Dev Server
-Navigate to the frontend folder and install node modules:
+> `fastapi>=0.115` is a hard floor: earlier Starlette releases ship a `TestClient` that
+> cannot construct an `httpx>=0.28` client, and the whole test suite errors out.
+
+### 2. Frontend
 ```bash
 cd frontend
 npm install
-npm install lucide-react
+npx playwright install chromium   # only needed to run the E2E gauntlet
 ```
 
 ---
 
 ## ⚙️ Running Locally
-To launch the application locally, you must run both the backend server and frontend server simultaneously:
 
-### Step A: Launch Backend API
-Ensure your Python virtual environment is activated, then run:
+### Two-server development (hot reload)
 ```bash
-# From workspace root
-backend/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
-```
-* API Server runs on: `http://localhost:8000`
-* Interactive Swagger Docs: `http://localhost:8000/docs`
+# Terminal A — API on :8000
+py -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 
-### Step B: Launch Next.js Dev Server
-```bash
-# Navigate to frontend folder
-cd frontend
-npm run dev
+# Terminal B — UI on :3000 (talks to :8000 automatically)
+npm --prefix frontend run dev
 ```
-* Next.js server runs on: `http://localhost:3000`
+* API: `http://localhost:8000` · Swagger: `http://localhost:8000/docs`
+* UI: `http://localhost:3000`
+
+### Single-origin (production shape)
+```bash
+npm --prefix frontend run build          # static export → frontend/out
+py -m uvicorn backend.main:app --port 8000
+```
+FastAPI serves the export at `/` with every `/api` route taking precedence, which is exactly
+how the container runs.
+
+### Offline demo, no credentials
+```bash
+npm --prefix frontend run build
+MOCK_LLM=1 MOCK_LLM_DELAY_MS=600 py -m uvicorn backend.main:app --port 8000
+```
+
+### LinkedIn presenter (scripted walkthrough)
+```bash
+./start-linkedin-demo.sh
+# Windows: start-linkedin-demo.cmd
+# or: py -m backend.linkedin_demo
+```
+Opens `http://localhost:8000/?demo=1` with the tour skipped, the coffee / Bengaluru launch fields filled, two Compare runs seeded, and on-screen speaking cues from [docs/LINKEDIN_DEMO.md](docs/LINKEDIN_DEMO.md).
 
 ---
 
-## 💡 Usage & User Journey (Step-by-Step)
+## 💡 Usage & User Journey
 
-### 1. Initial Dashboard
-When you launch the application, you'll be greeted by the central dashboard, which tracks total orchestrations, active agents, finished reports, and lists your past runs.
-![Initial Dashboard](docs/screenshots/dashboard_loaded_nextjs.png)
+### 1. Dashboard
+The command center tracks total orchestrations, completed reports, cumulative tokens and
+spend, and lists every past run with its duration, cost and model tiers. A first-visit
+camera tour names each agent in the constellation and is remembered in LocalStorage.
 
-### 2. Configuring LLM Providers
-Navigate to the **LLM Providers** tab to dynamically assign models for both Light and Heavy agent tasks. 
-- **Ollama**: Select Ollama and specify `llama3.1:8b`. No API key is required.
-- **Cloud Providers**: Select OpenAI, Gemini, DeepSeek, or Qwen and paste your API key. Keys are saved securely to your browser's **LocalStorage** (zero-backend-cost architecture).
-- **Mocking**: Type **`MOCK_KEY`** in the key field to perform dry runs offline without utilizing API tokens.
-![LLM Providers Settings](docs/screenshots/llm_providers_loaded_nextjs.png)
+### 2. Settings drawer
+Open **Settings** (or `Ctrl`/`Cmd`+`K` → "Open settings") to configure both tiers:
+- **Ollama**: pick `llama3.1:8b`; no API key required.
+- **Cloud providers**: pick OpenAI, Anthropic, Gemini, DeepSeek, Qwen or Bedrock and paste
+  your key. Keys live in **this browser's LocalStorage** and are only ever sent as request
+  payload; the UI shows them masked.
+- **Test connection** reports reachability, latency and how many models the provider offers.
+- **Offline**: run the server with `MOCK_LLM=1`, or type a key starting with `MOCK`.
 
-### 3. Launching a Research Task
-Navigate to **New Research**. Enter your target **Business Idea / Concept** (e.g. `Specialty Coffee Shop`) and the **Target Location / Area** (e.g. `Brooklyn, NY`), then click Launch.
-![Research Inputs](docs/screenshots/inputs_entered_nextjs.png)
+### 3. Launching research
+**New research** → business idea (required) and target location (optional). Submitting is
+optimistic: the form collapses into the live telemetry view the instant the task is queued —
+there is never a blocking spinner.
 
-### 4. Tracking Pipeline Progress
-The system displays a real-time progress stepper (Queued ➔ Researching ➔ Critique ➔ Refining ➔ Polishing) alongside a live terminal console streaming HTTP polling events from the FastAPI backend.
-![Pipeline Progress Console](docs/screenshots/research_launched_nextjs.png)
+### 4. Tracking the pipeline
+Telemetry shows the four backend stages (Coordinate → Research → Synthesise → Audit) with
+per-stage duration, token count and cost, a scrubber that replays the run to any point, and
+a streaming log terminal with severity filtering, search, copy and a "jump to latest" pill.
+The constellation behind it lights up in step. Cancel is available while the run is live;
+closing the tab mid-run raises a confirmation, and reopening restores the run.
 
-### 5. Reviewing the Final Report
-Once the Fact Checker agent finishes, the fully compiled C-suite report is rendered with tabbed navigation.
+### 5. Reading the report
+Five tabs — Executive Summary, Market & Competitors, SWOT Analysis, Critique &
+Refinements, Raw JSON — plus reading mode (distraction-free, print/PDF friendly), section
+copy, JSON/Markdown export and a shareable deep link (`#run=<id>&tab=<tab>`).
 
-#### SWOT Analysis
-A detailed matrix highlighting Strengths, Weaknesses, Opportunities, and Threats based on the multi-agent synthesis.
-![SWOT Analysis Matrix](docs/screenshots/task_swot_analysis_nextjs.png)
-
-#### Critique & Refinement Logs
-The Heavy model systematically audits the initial drafts provided by the Light models. Here you can track all the logical gaps identified and how they were subsequently refined.
-![Critique Logs](docs/screenshots/critique_tab_view_nextjs.png)
-
----
-
-## 🖼️ User Interface Themes (Screenshots)
-
-The interface supports three custom high-contrast visual themes you can toggle via the segmented switcher buttons at the bottom left of the sidebar footer.
-
-### 1. Dark Mode Theme (Relocated Switcher)
-The default premium dark theme showcasing the relocated pill switcher at the bottom left:
-![Dark Theme Layout](docs/screenshots/dark_mode_active.png)
-
-### 2. Light Mode Theme
-The clean slate-gray light layout featuring high-contrast navy text and white card containers:
-![Light Theme Layout](docs/screenshots/light_mode_active.png)
-
-### 3. Solarized Mode Theme
-The vintage-style base03 teal theme with gold accents for a nostalgic console layout:
-![Solarized Theme Layout](docs/screenshots/solarized_mode_active.png)
+### 6. Comparing runs
+**Compare** diffs two completed runs section by section, marking each as identical or
+changed alongside their duration, token and cost figures.
 
 ---
 
@@ -205,13 +334,31 @@ The system records enqueued request flows inside date-segregated files:
 
 ---
 
-## 🧪 E2E API Verification Suite
-To verify that the server endpoints and background orchestration pipelines function correctly, run the HTTP integration suite:
-```bash
-# Navigate to backend folder and run test script against active uvicorn
-backend/.venv/bin/python backend/test_live_apis.py
-```
-This tests GET/POST configurations, key masking, background enqueuing, progress polling, and structured report schema validations.
+## 🧪 Test Gauntlet
+
+| Layer | Command | What it proves |
+| --- | --- | --- |
+| Static | `npm --prefix frontend run lint` | ESLint + React Compiler rules clean |
+| Static | `npm --prefix frontend run build` | Static export compiles and prerenders |
+| Unit + contract | `py -m pytest backend/tests -q` | Every API contract row, path-traversal guards, CORS, secret masking, stage accounting, the `MOCK_LLM` pipeline |
+| E2E | `npm --prefix frontend run test:e2e` | Real Chromium against the real FastAPI server with `MOCK_LLM=1` |
+
+The Playwright harness boots `uvicorn` itself (`playwright.config.mjs`), points
+`REPORTS_DIR` at `./.e2e-reports` so your own runs are untouched, and covers five layers:
+
+* `e2e/journey.spec.js` — submit, watch progress, stage timings, every report tab, theme
+  switching, command palette, export, comparison, deep-link reload.
+* `e2e/resilience.spec.js` — backend down, 500s, malformed JSON, empty report, rapid double
+  submit, cancel mid-run, back/forward, optimistic-delete rollback.
+* `e2e/a11y.spec.js` — axe (zero critical/serious) in all three themes on dashboard and
+  report, skip link, keyboard-only journey, `aria-live`, focus trapping, reduced motion,
+  canvas-off persistence.
+* `e2e/performance.spec.js` — draw-call budget, manual quality degrade, heap growth across
+  repeated view churn, context release when the canvas is switched off.
+* `e2e/responsive.spec.js` — 360px, tablet and desktop layouts with no horizontal overflow.
+
+Add `?perf=1` to any URL to show the otherwise dev-only renderer HUD (fps, draw calls,
+triangles, geometries, heap) with its manual quality switch.
 
 ---
 

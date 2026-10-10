@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "C:\\Users\\masharma1\\Desktop\\Learning\\Multi-Agent-Research-System - Copy (2)\\.archify\\architecture-runtime-20261010-101802\\candidate.json",
+    "sha256": "6cf239417edecce9bcd39d9fcf0ef209746e06b90dae9034e28125c9b55d12bc",
+    "bytes": 5074
+  },
+  "artifact": {
+    "path": "C:\\Users\\masharma1\\Desktop\\Learning\\Multi-Agent-Research-System - Copy (2)\\.archify\\architecture-runtime-20261010-101802\\runtime.html",
+    "sha256": "f3a93ff09d523ea770cf0fdd9b188bba9ee2a04c734eb7c11cf3d8df37badd50",
+    "bytes": 775990
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\Users\\masharma1\\Desktop\\Learning\\Multi-Agent-Research-System - Copy (2)\\.archify\\architecture-runtime-20261010-101802\\review-2\\runtime.finalize.json",
+    "summaryReceipt": "C:\\Users\\masharma1\\Desktop\\Learning\\Multi-Agent-Research-System - Copy (2)\\.archify\\architecture-runtime-20261010-101802\\review-2\\runtime.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\masharma1\\Desktop\\Learning\\Multi-Agent-Research-System - Copy (2)\\.archify\\architecture-runtime-20261010-101802\\review-2\\runtime.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-10T04:48:26.770Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 8339
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "90ce20f1-662c-463f-a811-c719b8370aa3",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\masharma1\\Desktop\\Learning\\Multi-Agent-Research-System - Copy (2)\\.archify\\architecture-runtime-20261010-101802\\candidate.json",
+  "output": "C:\\Users\\masharma1\\Desktop\\Learning\\Multi-Agent-Research-System - Copy (2)\\.archify\\architecture-runtime-20261010-101802\\runtime.html",
+  "specification": {
+    "sha256": "6cf239417edecce9bcd39d9fcf0ef209746e06b90dae9034e28125c9b55d12bc",
+    "bytes": 5074
+  },
+  "artifact": {
+    "sha256": "f3a93ff09d523ea770cf0fdd9b188bba9ee2a04c734eb7c11cf3d8df37badd50",
+    "bytes": 775990
+  }
+}

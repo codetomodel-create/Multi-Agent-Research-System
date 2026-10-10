@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Multi-Agent Research System — Runtime Architecture",
+    "output": ".archify/architecture-runtime-20261010-101802/runtime.html",
+    "quality_profile": "showcase",
+    "locale": "en"
+  },
+  "components": [
+    { "id": "user", "type": "external", "label": "User", "sublabel": "web browser", "pos": [40, 40], "size": [150, 64] },
+    { "id": "ui", "type": "frontend", "label": "Next.js Dashboard", "sublabel": "static export + R3F", "pos": [40, 190], "size": [150, 70] },
+    { "id": "ddg", "type": "external", "label": "DuckDuckGo", "sublabel": "DDGS text search", "pos": [470, 190], "size": [150, 64] },
+    { "id": "api", "type": "backend", "label": "FastAPI", "sublabel": "uvicorn :7860", "pos": [40, 340], "size": [150, 70] },
+    { "id": "runner", "type": "backend", "label": "Research Pipeline", "sublabel": "run_market_research", "tag": "cancellable", "pos": [470, 340], "size": [150, 520] },
+    { "id": "coordinator", "type": "backend", "label": "CoordinatorAgent", "sublabel": "Queue · plan", "pos": [730, 340], "size": [160, 70] },
+    { "id": "light", "type": "backend", "label": "4 Light Agents", "sublabel": "Researching · parallel", "pos": [730, 490], "size": [160, 70] },
+    { "id": "writer", "type": "backend", "label": "WriterAgent", "sublabel": "Critique · compile", "pos": [730, 640], "size": [160, 70] },
+    { "id": "factcheck", "type": "backend", "label": "FactCheckerAgent", "sublabel": "Polishing · JSON", "pos": [730, 790], "size": [160, 70] },
+    { "id": "sse", "type": "messagebus", "label": "SSE Pub/Sub", "sublabel": "in-memory queues", "pos": [260, 640], "size": [140, 70] },
+    { "id": "reports", "type": "database", "label": "reports/<task_id>/", "sublabel": "meta.json · progress.json · report.json", "pos": [40, 950], "size": [520, 70] },
+    { "id": "providers", "type": "external", "label": "LLM Providers", "sublabel": "via LiteLLM", "pos": [1010, 340], "size": [170, 520] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Browser", "wraps": ["user", "ui"] },
+    { "kind": "region", "label": "Docker container · single uvicorn process", "wraps": ["api", "runner", "coordinator", "light", "writer", "factcheck", "sse", "reports"] }
+  ],
+  "connections": [
+    { "id": "user-opens-ui", "from": "user", "to": "ui", "label": "HTTPS" },
+    { "id": "ui-calls-api", "from": "ui", "to": "api", "label": "REST + SSE", "variant": "emphasis" },
+    { "id": "api-starts-run", "from": "api", "to": "runner", "label": "BackgroundTasks", "variant": "emphasis" },
+    { "id": "runner-searches", "from": "runner", "to": "ddg", "label": "web_search ×4", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
+    { "id": "stage-plan", "from": "runner", "to": "coordinator", "label": "1 · plan" },
+    { "id": "stage-gather", "from": "runner", "to": "light", "label": "2 · gather ×4" },
+    { "id": "stage-compile", "from": "runner", "to": "writer", "label": "3 · compile" },
+    { "id": "stage-verify", "from": "runner", "to": "factcheck", "label": "4 · verify" },
+    { "id": "coordinator-llm", "from": "coordinator", "to": "providers", "label": "heavy model" },
+    { "id": "light-llm", "from": "light", "to": "providers", "label": "light model ×4" },
+    { "id": "writer-llm", "from": "writer", "to": "providers", "label": "heavy model" },
+    { "id": "factcheck-llm", "from": "factcheck", "to": "providers", "label": "heavy · JSON" },
+    { "id": "runner-publishes", "from": "runner", "to": "sse", "label": "publish", "fromSide": "left", "toSide": "right" },
+    { "id": "api-subscribes", "from": "sse", "to": "api", "label": "stream", "variant": "dashed", "fromSide": "left", "toSide": "bottom" },
+    { "id": "api-run-files", "from": "api", "to": "reports", "label": "meta.json · read", "fromSide": "bottom", "toSide": "top" },
+    { "id": "runner-writes", "from": "runner", "to": "reports", "label": "progress + report", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Pipeline", "items": ["Stages: Queue → Researching → Critique → Polishing", "Researching runs 4 light agents with asyncio.gather", "POST /cancel sets an asyncio.Event checked before each stage", "Providers: OpenAI, Anthropic, Gemini, Ollama, Bedrock, DeepSeek, Qwen"] },
+    { "dot": "cyan", "title": "Live progress", "items": ["log_progress writes progress.json and publishes an SSE event", "UI uses EventSource on /api/runs/{id}/stream", "Falls back to polling /progress every 1.5 s"] },
+    { "dot": "amber", "title": "Configuration", "items": ["config/config.yaml defaults + backend/config.json UI overrides", "Request body overrides models, keys and web search", "POST /api/models lists provider models via httpx (5-min cache)"] },
+    { "dot": "rose", "title": "Ops & security", "items": ["Session logs in logs/<date>/ with secrets masked", "CORS allow-list, credentials disabled", "One Docker image serves the static UI and API on :7860"] }
+  ]
+}

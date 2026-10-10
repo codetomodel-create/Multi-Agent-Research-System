@@ -1,0 +1,151 @@
+WEBVTT
+
+00:00:03.910 --> 00:00:22.099
+Welcome to MarketAgent Observatory.  In the next few minutes you will learn everything you need to run a complete market research study on your own: what the product does, how to set it up, how to launch research, how to read the results, and how to compare studies side by side.
+
+00:00:22.149 --> 00:00:37.171
+Here is the idea in one sentence.  You type a business idea and, optionally, a city.  Seven specialised A. I.
+
+00:00:37.221 --> 00:00:52.244
+agents then plan the study, research the market in parallel, write an executive report, and fact-check it.  The result is a structured, board-ready market report, not a chat transcript.  It is built for founders, product managers and analysts who need a first-pass market view in minutes instead of days.
+
+00:00:52.294 --> 00:01:03.115
+There are two kinds of people who use it.  Researchers launch studies and read reports.  Whoever sets up the workspace picks the A. I.
+
+00:01:03.165 --> 00:01:13.987
+providers and keys once, in Settings.  In a small team, that is usually the same person.  There are no separate logins: anyone who can open the app can do both.
+
+00:01:14.037 --> 00:01:25.827
+When you open the app for the first time, a short guided tour appears.  The animated scene behind the interface is the observatory.  Every glowing body is one of the seven agents, and its glow follows the real state of your current run.
+
+00:01:25.877 --> 00:01:37.668
+You can step through the tour with Next, or dismiss it with Skip tour.  You will not see it again on this browser.
+
+00:01:37.718 --> 00:01:48.479
+The tour introduces each agent.  The Coordinator plans the study.
+
+00:01:48.529 --> 00:01:59.290
+Four research agents gather general market data, competitors, pricing, and trends, all at the same time.  The Writer turns their drafts into one narrative, and the Fact Checker audits it and produces the final structured report.
+
+00:01:59.340 --> 00:02:04.910
+Let's finish the tour and look at the dashboard, which is your home screen.
+
+00:02:04.960 --> 00:02:20.389
+The left rail is the entire product.  Dashboard shows your history.  New research starts a study.  Telemetry shows a run in progress with live timings and cost.  Compare puts two finished reports side by side.
+
+00:02:20.439 --> 00:02:35.869
+Settings is where the A. I.  providers are configured.  At the bottom you can switch the colour theme, turn the 3D canvas off on a slow laptop, and see whether the backend is connected.  The green dot means everything is working.
+
+00:02:35.919 --> 00:02:43.367
+The three cards summarise the workspace: how many studies have been run, how many finished with a report, and the total tokens and estimated spend across all of them.  This is how a team keeps an eye on A.
+
+00:02:43.417 --> 00:02:50.865
+I.  costs.
+
+00:02:50.915 --> 00:03:06.440
+Below is the research history.  Each row is one study, with when it ran, how long it took, how many tokens it used, what it cost, and which light and heavy models were used.  The status badge tells you whether it succeeded, is still running, failed, or was cancelled.
+
+00:03:06.490 --> 00:03:22.016
+Report opens the finished report.  Re-run repeats the same study with your current settings, which is useful after you change models.  The red bin deletes the run permanently.
+
+00:03:22.066 --> 00:03:33.416
+Before your first study, open Settings.  The pipeline uses two tiers of models.
+
+00:03:33.466 --> 00:03:44.817
+The light tier runs the four parallel research agents, so pick something fast and inexpensive here.  The heavy tier runs the Coordinator, the Writer and the Fact Checker, where quality matters most, so pick your strongest model here.
+
+00:03:44.867 --> 00:04:03.647
+For each tier choose a provider: Ollama for free local models, or OpenAI, Anthropic, Gemini, DeepSeek, Qwen and A. W. S.  Bedrock.  Once a key is entered the model list is fetched live from that provider, and you can type to filter it.
+
+00:04:03.697 --> 00:04:22.477
+API keys are stored in this browser only and are always shown masked.  Test connection checks that the key works and shows the response time and how many models are available.  Save settings when you are done.  A good starting point is a small local model for the light tier and a top-tier cloud model for the heavy tier.
+
+00:04:22.527 --> 00:04:26.189
+Let's close Settings and launch a study.
+
+00:04:26.239 --> 00:04:35.159
+Click New research.  The form has just two fields.
+
+00:04:35.209 --> 00:04:44.130
+Business idea is required and can be anything from a one-liner to a full paragraph.  Target location is optional; adding a city or region focuses the competitor and pricing research on that market.
+
+00:04:44.180 --> 00:05:00.418
+Here is a real example.  Our idea is an electric bike rental service for university campuses, and the target market is Pune.  Be specific: name the customer, the offer and the place, and the report will be specific too.
+
+00:05:00.468 --> 00:05:12.792
+Two options sit below the fields.  Enable web search lets the research agents pull live results from DuckDuckGo, so the report reflects the current market rather than the model's memory.  Leave it on unless you are offline.
+
+00:05:12.842 --> 00:05:25.167
+Override the API key lets you use a different key just for this run, for example a client's own account.  That key is sent once and never stored.
+
+00:05:25.217 --> 00:05:34.105
+Click Launch agent pipeline.  The task is queued instantly and the screen switches to Telemetry so you can watch it happen.
+
+00:05:34.155 --> 00:05:48.721
+The pipeline timeline shows the four stages.  Coordinate is the planning step.  Research runs the four light agents in parallel.
+
+00:05:48.771 --> 00:06:03.338
+Synthesise is the Writer composing the report, and Audit is the Fact Checker.  Each stage lights up as it runs and records its own duration, tokens and estimated cost, so you can see exactly where time and money go.  Behind the panels, the agent that is working glows in the observatory.
+
+00:06:03.388 --> 00:06:17.533
+The execution stream underneath is the live log: every message the agents emit, in order.  You can search it, filter it to only failures, or copy the whole thing when you need to share it with a colleague.
+
+00:06:17.583 --> 00:06:33.730
+While a run is in progress, a Cancel run button appears at the top.  Use it if you launched the wrong idea or want to stop spending.  The pipeline stops cleanly at the next stage boundary and the run is kept in history marked as cancelled.
+
+00:06:33.780 --> 00:06:45.992
+When the audit finishes, the app opens the report for you.  The header shows the generated title, the topic, and a verified badge, meaning it passed the fact-check stage.
+
+00:06:46.042 --> 00:07:03.496
+The report is organised into tabs.  Executive Summary is the one-page answer: the opportunity in plain language, followed by Strategic Recommendations, which are the concrete next steps.  If you only read one tab, read this one.
+
+00:07:03.546 --> 00:07:15.482
+Market and Competitors covers the market overview and trends, then the competitive landscape.  With a location set, this is where the local players and their pricing appear.
+
+00:07:15.532 --> 00:07:27.063
+SWOT Analysis lays out strengths, weaknesses, opportunities and threats in the familiar four-quadrant grid.  It is a good slide to paste straight into a pitch deck.
+
+00:07:27.113 --> 00:07:38.453
+Critique and Refinements is unique to this product.  It is the Fact Checker's own notes: which claims it challenged, what it corrected, and where the evidence was thin.
+
+00:07:38.503 --> 00:07:49.844
+Read it before you quote a figure to your board.  Raw JSON, the last tab, is the machine-readable version for developers who want to feed the report into another system.
+
+00:07:49.894 --> 00:08:02.190
+The toolbar above the tabs handles sharing.  Read opens a distraction-free reading mode with a Print or P. D. F.
+
+00:08:02.240 --> 00:08:14.536
+button.  Markdown and JSON download the report as real files you can attach to an email or commit to a repository.  Copy section copies the current tab as text, and Share link copies a link that opens this exact run and tab for anyone with access to the app.
+
+00:08:14.586 --> 00:08:25.111
+Here is reading mode: the whole report on one scrollable page, in order, ready to print.  Press Escape or click Close to return.
+
+00:08:25.161 --> 00:08:35.581
+You can go back to Telemetry for any finished run.  The stage table now shows final durations, tokens and cost, with totals underneath.
+
+00:08:35.631 --> 00:08:46.051
+The replay slider lets you scrub the log back to any point in the run, which is the fastest way to understand a failure.  Resume live jumps back to the end.
+
+00:08:46.101 --> 00:08:58.526
+Compare answers the question: what changes if I change the brief?  Pick any two completed runs as Run A and Run B.
+
+00:08:58.576 --> 00:09:11.001
+The app lines up each report section side by side, marks the sections that differ, and shows duration, tokens and cost for both.  Use it to compare two cities, two customer segments, or the same idea run with a cheaper model.
+
+00:09:11.051 --> 00:09:27.491
+For power users there is a command palette on Control K.  Type a few letters to jump to any view, open a specific report tab, switch theme or render quality, or open one of your recent runs.  Everything in the app is reachable from the keyboard.
+
+00:09:27.541 --> 00:09:44.309
+Choose light, dark, or follow the system.  Your choice is remembered.  If you are on a slow machine or a projector, untick 3D canvas: the observatory is decoration, and every feature works exactly the same without it.
+
+00:09:44.359 --> 00:10:02.690
+A few tips from experience.  Be specific in the business idea: customer, offer and place.  Keep web search on for current data.  Use a cheap light model and a strong heavy model to get the best quality per dollar.
+
+00:10:02.740 --> 00:10:21.071
+Always read the Critique tab before quoting numbers.  If the rail says Backend unreachable, the server is down or still starting; the app pauses live updates and recovers on its own when it is back.  If a live stream stalls, click Reconnect.  And when you need two versions of a study, use Re-run and then Compare.
+
+00:10:21.121 --> 00:10:39.943
+To recap the complete process.  One: open Settings and choose a light and a heavy model.  Two: click New research, describe the idea and the location, and launch.  Three: watch the four stages in Telemetry, with live cost.  Four: read the report, starting with the Executive Summary and the Critique, then export it as Markdown, JSON or P.
+
+00:10:39.993 --> 00:10:58.816
+D. F.  Five: use Compare to test a different brief.  That is MarketAgent Observatory.  You are ready to run your first study.

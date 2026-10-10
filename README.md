@@ -36,5 +36,17 @@ The AI Market Research Assistant is a config-driven, multi-agent system designed
    npm run dev
    ```
 
+## LinkedIn demo
+
+One command starts fixture mode, seeds two Compare runs, and opens the presenter URL:
+
+```bash
+./start-linkedin-demo.sh
+```
+
+Windows: `start-linkedin-demo.cmd` or `py -m backend.linkedin_demo`.
+
+Then follow the speaking script in `docs/LINKEDIN_DEMO.md`. Open `http://localhost:8000/?demo=1` if the browser does not launch.
+
 ## Full Documentation
 For the comprehensive project specification, architecture flowcharts, visual workflows, and deployment guides, please see `project_documentation.xlsx` or `project_documentation.md`.

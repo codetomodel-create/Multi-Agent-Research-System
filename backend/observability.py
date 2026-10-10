@@ -6,7 +6,7 @@ import asyncio
 import yaml
 import threading
 from datetime import datetime, timezone, timedelta
-from typing import Any, Optional
+from typing import Any
 
 WORKSPACE_DIR = os.getenv("WORKSPACE_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CONFIG_FILE = os.path.join(WORKSPACE_DIR, "config", "config.yaml")

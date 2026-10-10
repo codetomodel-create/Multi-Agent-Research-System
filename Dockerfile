@@ -30,17 +30,25 @@ COPY --from=frontend-builder /app/frontend/out ./frontend/out
 ENV WORKSPACE_DIR=/app
 ENV PORT=7860
 
-# Create writable logs & reports folders with open permissions
-RUN mkdir -p /app/logs /app/reports && chmod -R 777 /app
-
 # Set up user for Hugging Face Spaces (UID 1000)
 RUN useradd -m -u 1000 user
+
+# Create writable logs & reports folders owned by the runtime user.
+# Only the directories the app writes to are made writable; the rest of /app
+# stays read-only to the runtime user.
+RUN mkdir -p /app/logs /app/reports \
+    && chown -R user:user /app/logs /app/reports /app/backend \
+    && chmod -R 755 /app
+
 USER user
 ENV HOME=/home/user
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Expose port 7860
 EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:7860/api/health', timeout=4).status == 200 else 1)"
 
 # Run FastAPI backend
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7860"]

@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results/
+/.walkthrough-build/
 
 # next.js
 /.next/

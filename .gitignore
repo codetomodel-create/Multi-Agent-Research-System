@@ -5,7 +5,14 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# Local provider credentials must never be committed.
+.env
+.env.*
+!.env.example
 logs/
 reports/
+.e2e-reports/
+frontend/test-results/
+frontend/playwright-report/
 backend/config.json
 .DS_Store

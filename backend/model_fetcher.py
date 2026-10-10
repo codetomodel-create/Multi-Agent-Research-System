@@ -1,5 +1,5 @@
-import os
 import time
+import hashlib
 import logging
 from typing import List, Dict, Any, Optional
 
@@ -19,6 +19,19 @@ logger = logging.getLogger(__name__)
 # ── Simple in-memory cache ────────────────────────────────────────────────────
 _model_cache: Dict[str, tuple[float, List[Dict[str, Any]]]] = {}
 _CACHE_TTL = 300  # 5 minutes
+_CACHE_MAX_ENTRIES = 64
+
+
+def _credential_fingerprint(secret: str) -> str:
+    """Stable, non-reversible cache discriminator for a credential.
+
+    A raw prefix of the key would collide across distinct credentials that share
+    the same leading characters (common for provider-prefixed keys), which would
+    serve one caller's model list to another.
+    """
+    if not secret:
+        return "anon"
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()[:16]
 
 
 def _cache_key(provider: str, extra: str = "") -> str:
@@ -33,6 +46,10 @@ def _get_cached(key: str) -> Optional[List[Dict[str, Any]]]:
 
 
 def _set_cached(key: str, models: List[Dict[str, Any]]):
+    if len(_model_cache) >= _CACHE_MAX_ENTRIES:
+        # Drop the oldest entry so a long-lived process cannot grow unbounded.
+        oldest = min(_model_cache, key=lambda k: _model_cache[k][0])
+        _model_cache.pop(oldest, None)
     _model_cache[key] = (time.time(), models)
 
 
@@ -61,7 +78,7 @@ class ProviderModelFetcher:
 
     @staticmethod
     async def fetch_openai_models(api_key: str) -> List[Dict[str, Any]]:
-        ck = _cache_key("openai", api_key[:8] if api_key else "")
+        ck = _cache_key("openai", _credential_fingerprint(api_key))
         cached = _get_cached(ck)
         if cached is not None:
             return cached
@@ -78,7 +95,7 @@ class ProviderModelFetcher:
 
     @staticmethod
     async def fetch_anthropic_models(api_key: str) -> List[Dict[str, Any]]:
-        ck = _cache_key("anthropic", api_key[:8] if api_key else "")
+        ck = _cache_key("anthropic", _credential_fingerprint(api_key))
         cached = _get_cached(ck)
         if cached is not None:
             return cached
@@ -95,7 +112,7 @@ class ProviderModelFetcher:
 
     @staticmethod
     async def fetch_gemini_models(api_key: str) -> List[Dict[str, Any]]:
-        ck = _cache_key("gemini", api_key[:8] if api_key else "")
+        ck = _cache_key("gemini", _credential_fingerprint(api_key))
         cached = _get_cached(ck)
         if cached is not None:
             return cached
@@ -138,7 +155,7 @@ class ProviderModelFetcher:
         Uses the 'bedrock' service (not 'bedrock-runtime') which provides
         list_foundation_models.
         """
-        ck = _cache_key("bedrock", f"{region_name}:{aws_access_key_id[:6]}")
+        ck = _cache_key("bedrock", f"{region_name}:{_credential_fingerprint(aws_access_key_id)}")
         cached = _get_cached(ck)
         if cached is not None:
             return cached
