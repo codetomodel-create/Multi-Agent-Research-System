@@ -975,7 +975,7 @@ async def run_market_research(topic: str, config_data: dict, task_id: str, run_d
     except Exception as e:
         logger.error(f"Error during LiteLLM workflow execution: {str(e)}\n{traceback.format_exc()}")
         friendly_stage = stage if 'stage' in locals() else "Startup"
-        friendly_error_msg = f"Workflow execution encountered an unexpected issue at stage '{friendly_stage}'. Please check your model configuration and try again."
+        friendly_error_msg = f"Pipeline failed at stage '{friendly_stage}': {str(e)}"
         log_progress(run_dir, friendly_stage, "failed", friendly_error_msg, task_id)
         
     cancel_events.pop(task_id, None)
