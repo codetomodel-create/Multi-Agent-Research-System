@@ -58,7 +58,7 @@ def mock_llm_delay_seconds() -> float:
         return 0.0
 
 
-def _is_mock_key(api_key: str | None) -> bool:
+def _is_mock_key(api_key: Optional[str]) -> bool:
     return bool(api_key) and str(api_key).startswith("MOCK")
 
 
@@ -269,7 +269,7 @@ def _blank_stage(name: str) -> dict:
     }
 
 
-def _empty_progress(task_id: str | None = None, topic: str | None = None) -> dict:
+def _empty_progress(task_id: Optional[str] = None, topic: Optional[str] = None) -> dict:
     return {
         "task_id": task_id,
         "topic": topic,
@@ -282,7 +282,7 @@ def _empty_progress(task_id: str | None = None, topic: str | None = None) -> dic
     }
 
 
-def _ms_between(start_iso: str | None, end_iso: str | None) -> int | None:
+def _ms_between(start_iso: Optional[str], end_iso: Optional[str]) -> Optional[int]:
     if not start_iso or not end_iso:
         return None
     try:
@@ -292,7 +292,7 @@ def _ms_between(start_iso: str | None, end_iso: str | None) -> int | None:
     return max(0, int(delta.total_seconds() * 1000))
 
 
-def _apply_stage_update(data: dict, entry: dict, usage: dict | None) -> None:
+def _apply_stage_update(data: dict, entry: dict, usage: Optional[dict]) -> None:
     """Folds one progress entry into the stage table and run totals."""
     stages = data.setdefault("stages", [_blank_stage(n) for n in PIPELINE_STAGES])
     stage = next((s for s in stages if s.get("name") == entry["stage"]), None)
@@ -325,8 +325,8 @@ def log_progress(
     stage: str,
     status: str,
     message: str,
-    task_id: str | None = None,
-    usage: dict | None = None,
+    task_id: Optional[str] = None,
+    usage: Optional[dict] = None,
 ):
     """Logs progress of a run to a progress.json file for UI polling and SSE push."""
     progress_file = os.path.join(run_dir, "progress.json")
@@ -431,7 +431,14 @@ def _usage_of(response) -> dict:
 # Injecting AWS credentials into os.environ mutates global process state, so the
 # Bedrock path is serialised: the four light agents otherwise run concurrently
 # and would restore each other's backups.
-_aws_env_lock = asyncio.Lock()
+# Lazy init: asyncio.Lock() must be created inside a running event loop (Python 3.9).
+_aws_env_lock: Optional[asyncio.Lock] = None
+
+def _get_aws_env_lock() -> asyncio.Lock:
+    global _aws_env_lock
+    if _aws_env_lock is None:
+        _aws_env_lock = asyncio.Lock()
+    return _aws_env_lock
 
 async def run_litellm_agent(
     model: str, 
@@ -470,7 +477,7 @@ async def run_litellm_agent(
     # Bedrock requires AWS env vars set atomically to avoid race conditions
     needs_aws_env = bool(is_bedrock and api_key and len(api_key.split(":", 3)) >= 3)
     if needs_aws_env:
-        async with _aws_env_lock:
+        async with _get_aws_env_lock():
             return await _invoke_litellm(model, kwargs, api_key, usage_out)
     return await _invoke_litellm(model, kwargs, api_key, usage_out)
 
@@ -982,7 +989,7 @@ async def run_market_research(topic: str, config_data: dict, task_id: str, run_d
     except Exception as e:
         logger.error(f"Error during LiteLLM workflow execution: {str(e)}\n{traceback.format_exc()}")
         friendly_stage = stage if 'stage' in locals() else "Startup"
-        friendly_error_msg = f"Pipeline failed at stage '{friendly_stage}': {str(e)}"
+        friendly_error_msg = f"Pipeline failed at stage '{friendly_stage}'. Check your model config and API key. ({type(e).__name__})"
         log_progress(run_dir, friendly_stage, "failed", friendly_error_msg, task_id)
         
     cancel_events.pop(task_id, None)
