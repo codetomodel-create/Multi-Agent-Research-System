@@ -458,12 +458,17 @@ async def run_litellm_agent(
     }
     if api_base:
         kwargs["api_base"] = api_base
-    if response_json:
+    # Bedrock Converse API does not support response_format — skip it for bedrock
+    if response_json and not model.startswith("bedrock/"):
         kwargs["response_format"] = {"type": "json_object"}
-        
-    # Bedrock requires specific kwargs if using raw IAM credentials passed via api_key
-    needs_aws_env = bool(model.startswith("bedrock/") and api_key and ":" in api_key
-                         and len([p for p in api_key.split(":")]) >= 3)
+
+    # Bedrock uses IAM credentials, not an api_key — remove it to avoid litellm errors
+    is_bedrock = model.startswith("bedrock/")
+    if is_bedrock:
+        kwargs.pop("api_key", None)
+
+    # Bedrock requires AWS env vars set atomically to avoid race conditions
+    needs_aws_env = bool(is_bedrock and api_key and len(api_key.split(":", 3)) >= 3)
     if needs_aws_env:
         async with _aws_env_lock:
             return await _invoke_litellm(model, kwargs, api_key, usage_out)
@@ -473,6 +478,8 @@ async def run_litellm_agent(
 async def _invoke_litellm(model: str, kwargs: dict, api_key: str, usage_out: Optional[dict] = None) -> str:
     aws_env_backup = {}
     if model.startswith("bedrock/") and api_key and ":" in api_key:
+        # Remove api_key from kwargs — Bedrock uses IAM creds, not an API key
+        kwargs.pop("api_key", None)
         # Split on first 3 colons only — session token may itself contain colons
         parts = api_key.split(":", 3)
         if len(parts) >= 3:
