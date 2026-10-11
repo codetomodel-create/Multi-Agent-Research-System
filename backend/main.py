@@ -986,13 +986,13 @@ async def fetch_models(req: ModelFetchRequest):
             if not (req.aws_access_key_id and req.aws_secret_access_key and req.region):
                 # Try parsing from api_key field (ACCESS:SECRET:REGION[:TOKEN])
                 if req.api_key and ":" in req.api_key:
-                    parts = req.api_key.split(":")
+                    parts = req.api_key.split(":", 3)
                     if len(parts) >= 3:
-                        req.aws_access_key_id = parts[0]
-                        req.aws_secret_access_key = parts[1]
-                        req.region = parts[2]
+                        req.aws_access_key_id = parts[0].strip()
+                        req.aws_secret_access_key = parts[1].strip()
+                        req.region = parts[2].strip()
                         if len(parts) >= 4:
-                            req.aws_session_token = parts[3]
+                            req.aws_session_token = parts[3].strip()
                     else:
                         raise HTTPException(status_code=400, detail="Bedrock requires ACCESS_KEY:SECRET_KEY:REGION format")
                 else:

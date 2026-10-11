@@ -473,28 +473,30 @@ async def run_litellm_agent(
 async def _invoke_litellm(model: str, kwargs: dict, api_key: str, usage_out: Optional[dict] = None) -> str:
     aws_env_backup = {}
     if model.startswith("bedrock/") and api_key and ":" in api_key:
-        parts = [p.strip() for p in api_key.split(":")]
+        # Split on first 3 colons only — session token may itself contain colons
+        parts = api_key.split(":", 3)
         if len(parts) >= 3:
-            kwargs["aws_access_key_id"] = parts[0]
-            kwargs["aws_secret_access_key"] = parts[1]
+            kwargs["aws_access_key_id"] = parts[0].strip()
+            kwargs["aws_secret_access_key"] = parts[1].strip()
             # Explicitly set region for LiteLLM (covers both possible param names)
-            kwargs["aws_region_name"] = parts[2]
-            kwargs["aws_region"] = parts[2]
-            
+            kwargs["aws_region_name"] = parts[2].strip()
+            kwargs["aws_region"] = parts[2].strip()
+
             # Also set in os.environ to guarantee boto3 picks it up, even if litellm doesn't propagate it
             aws_env_backup["AWS_ACCESS_KEY_ID"] = os.environ.get("AWS_ACCESS_KEY_ID")
             aws_env_backup["AWS_SECRET_ACCESS_KEY"] = os.environ.get("AWS_SECRET_ACCESS_KEY")
             aws_env_backup["AWS_REGION"] = os.environ.get("AWS_REGION")
             aws_env_backup["AWS_DEFAULT_REGION"] = os.environ.get("AWS_DEFAULT_REGION")
-            os.environ["AWS_ACCESS_KEY_ID"] = parts[0]
-            os.environ["AWS_SECRET_ACCESS_KEY"] = parts[1]
-            os.environ["AWS_REGION"] = parts[2]
-            os.environ["AWS_DEFAULT_REGION"] = parts[2]
-            
+            os.environ["AWS_ACCESS_KEY_ID"] = parts[0].strip()
+            os.environ["AWS_SECRET_ACCESS_KEY"] = parts[1].strip()
+            os.environ["AWS_REGION"] = parts[2].strip()
+            os.environ["AWS_DEFAULT_REGION"] = parts[2].strip()
+
             if len(parts) >= 4:
-                kwargs["aws_session_token"] = parts[3]
+                # parts[3] is everything after the 3rd colon — the full session token
+                kwargs["aws_session_token"] = parts[3].strip()
                 aws_env_backup["AWS_SESSION_TOKEN"] = os.environ.get("AWS_SESSION_TOKEN")
-                os.environ["AWS_SESSION_TOKEN"] = parts[3]
+                os.environ["AWS_SESSION_TOKEN"] = parts[3].strip()
             # Keep the api_key in kwargs so litellm can parse region and credentials
             
     # Run LiteLLM completion in a separate thread so it doesn't block the async event loop
